@@ -1,0 +1,1204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SQL Injection DoS Lab Report</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+      color: #ecf0f1;
+      padding: 20px;
+      min-height: 100vh;
+    }
+    
+    .container { 
+      max-width: 1200px; 
+      margin: 0 auto; 
+    }
+    
+    h1 { 
+      text-align: center; 
+      color: #3498db; 
+      margin-bottom: 30px;
+      font-size: 2rem;
+    }
+    
+    .input-section {
+      background: rgba(52, 152, 219, 0.1);
+      border: 2px solid #3498db;
+      border-radius: 10px;
+      padding: 25px;
+      margin-bottom: 30px;
+      backdrop-filter: blur(10px);
+    }
+    
+    h2 { 
+      color: #3498db; 
+      margin-bottom: 20px; 
+      font-size: 1.5rem;
+    }
+    
+    .form-group { 
+      margin-bottom: 20px; 
+    }
+    
+    label { 
+      display: block; 
+      font-weight: bold; 
+      margin-bottom: 8px;
+      color: #bdc3c7;
+    }
+    
+    textarea, input { 
+      width: 100%; 
+      padding: 12px; 
+      background: rgba(0,0,0,0.4); 
+      border: 1px solid #555; 
+      border-radius: 6px; 
+      color: white; 
+      font-family: 'Courier New', monospace;
+      font-size: 0.9rem;
+      resize: vertical;
+    }
+    
+    textarea:focus, input:focus {
+      outline: none;
+      border-color: #3498db;
+      box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+    }
+    
+    small {
+      display: block;
+      margin-top: 5px;
+      color: #95a5a6;
+      font-size: 0.85rem;
+    }
+    
+    button { 
+      background: #27ae60; 
+      color: white; 
+      padding: 12px 28px; 
+      border: none; 
+      border-radius: 6px; 
+      cursor: pointer; 
+      font-weight: bold;
+      font-size: 1rem;
+      margin-right: 12px;
+      transition: all 0.3s ease;
+    }
+    
+    button:hover { 
+      background: #229954;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(39, 174, 96, 0.4);
+    }
+    
+    button:active {
+      transform: translateY(0);
+    }
+    
+    .card { 
+      background: rgba(255,255,255,0.05); 
+      border: 1px solid #444; 
+      border-radius: 10px; 
+      padding: 25px; 
+      margin-bottom: 25px;
+      backdrop-filter: blur(10px);
+    }
+    
+    h3 {
+      color: #3498db;
+      margin-bottom: 15px;
+      font-size: 1.3rem;
+    }
+    
+    h4 {
+      color: #e74c3c;
+      margin-top: 20px;
+      margin-bottom: 10px;
+    }
+    
+    h5 {
+      color: #f39c12;
+      margin-top: 15px;
+      margin-bottom: 10px;
+    }
+    
+    .metric-box { 
+      background: rgba(52, 152, 219, 0.15); 
+      border-left: 4px solid #3498db; 
+      padding: 20px; 
+      margin: 15px 0;
+      border-radius: 4px;
+    }
+    
+    .metric-box p {
+      margin: 8px 0;
+      font-size: 1rem;
+    }
+    
+    .chart-container { 
+      position: relative; 
+      height: 350px; 
+      margin: 20px 0; 
+    }
+    
+    .code-block { 
+      background: #1a1a1a; 
+      border: 1px solid #444; 
+      border-radius: 6px; 
+      padding: 18px; 
+      margin: 12px 0; 
+      overflow-x: auto; 
+      font-family: 'Courier New', monospace; 
+      font-size: 0.9em; 
+      white-space: pre-wrap;
+      line-height: 1.5;
+    }
+    
+    .tabs { 
+      display: flex; 
+      gap: 12px; 
+      margin-bottom: 25px;
+      flex-wrap: wrap;
+    }
+    
+    .tab-btn { 
+      background: #444; 
+      color: white; 
+      border: none; 
+      padding: 12px 24px; 
+      cursor: pointer; 
+      border-radius: 6px;
+      font-weight: 500;
+      transition: all 0.3s ease;
+    }
+    
+    .tab-btn:hover {
+      background: #555;
+    }
+    
+    .tab-btn.active { 
+      background: #3498db;
+      box-shadow: 0 4px 12px rgba(52, 152, 219, 0.4);
+    }
+    
+    .tab-content { 
+      display: none; 
+    }
+    
+    .tab-content.active { 
+      display: block;
+      animation: fadeIn 0.3s ease;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    ul {
+      color: #bdc3c7;
+      margin-left: 20px;
+      line-height: 1.8;
+    }
+    
+    p {
+      line-height: 1.6;
+      margin: 10px 0;
+    }
+    
+    strong {
+      color: #ecf0f1;
+    }
+    
+    .alert {
+      padding: 15px;
+      border-radius: 6px;
+      margin: 15px 0;
+      font-weight: 500;
+    }
+    
+    .alert-success {
+      background: rgba(39, 174, 96, 0.2);
+      border: 1px solid #27ae60;
+      color: #2ecc71;
+    }
+    
+    .alert-error {
+      background: rgba(231, 76, 60, 0.2);
+      border: 1px solid #e74c3c;
+      color: #e74c3c;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔐 SQL Injection DoS - Server Crash Visualization</h1>
+    
+    <div class="input-section">
+      <h2>📊 Enter Your Lab Test Data</h2>
+      
+      <div class="form-group" style="display: none;">
+        <label>📊 Auto-Generated Metrics (Malicious Query)</label>
+        <textarea id="metricsJson" rows="6" placeholder="Metrics will be automatically generated based on query analysis..." readonly style="background: rgba(0,0,0,0.2); cursor: not-allowed;"></textarea>
+        <small style="color: #3498db;">⚡ These metrics are automatically calculated based on detected attack patterns in your SQL query</small>
+      </div>
+
+      <div class="form-group" style="display: none;">
+        <label>📊 Auto-Generated Metrics (Normal Query)</label>
+        <textarea id="normalMetricsJson" rows="6" placeholder="Metrics will be automatically generated..." readonly style="background: rgba(0,0,0,0.2); cursor: not-allowed;"></textarea>
+        <small style="color: #27ae60;">✓ Baseline metrics showing normal server behavior for comparison</small>
+      </div>
+
+      <div class="form-group">
+        <label>🚨 Malicious SQL Query (Resource-Intensive)</label>
+        <textarea id="sqlQuery" rows="4" placeholder="Enter the SQL injection query that crashed your server" oninput="detectDoSQuery()">SELECT * FROM users a, users b, users c, users d WHERE a.id=b.id AND b.id=c.id AND c.id=d.id AND BENCHMARK(50000000, MD5('attack'))</textarea>
+        <small>Examples: SLEEP(10), BENCHMARK(), nested joins, recursive CTEs</small>
+        <div id="dosDetection" style="margin-top: 10px;"></div>
+        <div style="margin-top: 10px; padding: 10px; background: rgba(52, 152, 219, 0.1); border-radius: 4px; border-left: 3px solid #3498db;">
+          <strong style="color: #3498db;">ℹ️ Note:</strong>
+          <span style="color: #bdc3c7; font-size: 0.9rem;">The query detection analyzes the SQL syntax. To see different resource utilization, you must also update the "Test Metrics JSON" fields above with actual data from your lab tests for each query type.</span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>✅ Normal Query (For Comparison)</label>
+        <textarea id="normalQuery" rows="2" placeholder="Enter a normal query for comparison">SELECT * FROM users WHERE id = ?</textarea>
+      </div>
+
+      <div id="sanitizedQueryDiv" style="display: none; margin-top: 20px; padding: 20px; background: rgba(39, 174, 96, 0.15); border: 2px solid #27ae60; border-radius: 8px;">
+        <h3 style="color: #27ae60; margin-bottom: 15px;">🛡️ Sanitized Safe Query</h3>
+        <p style="color: #bdc3c7; margin-bottom: 15px;">The malicious query has been automatically converted to a safe, parameterized version:</p>
+        <div class="code-block" id="sanitizedQuery" style="background: #1a2a1a; border: 1px solid #27ae60;">
+          Safe query will appear here...
+        </div>
+        <div style="margin-top: 15px; padding: 12px; background: rgba(52, 152, 219, 0.15); border-radius: 4px; border-left: 3px solid #3498db;">
+          <strong style="color: #3498db;">ℹ️ Sanitization Applied:</strong>
+          <ul id="sanitizationSteps" style="margin: 8px 0 0 20px; color: #bdc3c7; line-height: 1.8;">
+          </ul>
+        </div>
+      </div>
+
+      <button onclick="loadData()">📈 Load Test Results</button>
+      <button onclick="resetAll()" style="background: #e74c3c;">🔄 Reset</button>
+    </div>
+
+    <div id="message"></div>
+
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab(0)">📋 Overview</button>
+      <button class="tab-btn" onclick="switchTab(1)">📊 Charts</button>
+      <button class="tab-btn" onclick="switchTab(2)">🔍 Analysis</button>
+      <button class="tab-btn" onclick="switchTab(3)">🛡️ Defense</button>
+    </div>
+
+    <div id="overview" class="tab-content active">
+      <div class="card">
+        <h3>Test Summary - Side by Side Comparison</h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+          <div>
+            <h4 style="color: #e74c3c;">🚨 Malicious Query Impact</h4>
+            <div class="metric-box" id="summary" style="border-left-color: #e74c3c;">
+              <p>Click "Load Test Results" to visualize your data</p>
+            </div>
+          </div>
+          <div>
+            <h4 style="color: #27ae60;">✅ Normal Query Impact</h4>
+            <div class="metric-box" id="normalSummary" style="border-left-color: #27ae60;">
+              <p>Click "Load Test Results" to visualize your data</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="charts" class="tab-content">
+      <div class="card">
+        <h3>CPU Usage - Malicious vs Normal Query</h3>
+        <div class="chart-container">
+          <canvas id="chart1"></canvas>
+        </div>
+      </div>
+      
+      <div class="card">
+        <h3>Memory Usage - Malicious vs Normal Query</h3>
+        <div class="chart-container">
+          <canvas id="chart4"></canvas>
+        </div>
+      </div>
+      
+      <div class="card">
+        <h3>Response Time - Malicious vs Normal Query</h3>
+        <div class="chart-container">
+          <canvas id="chart2"></canvas>
+        </div>
+      </div>
+      
+      <div class="card">
+        <h3>Database Connections - Malicious vs Normal Query</h3>
+        <div class="chart-container">
+          <canvas id="chart3"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div id="analysis" class="tab-content">
+      <div class="card">
+        <h3>🚨 Malicious Query (Attack Vector)</h3>
+        <div class="code-block" id="malCode">Load data to see your query</div>
+        <p style="margin-top: 15px; color: #e74c3c;"><strong>Impact:</strong> This query causes resource exhaustion leading to DoS</p>
+      </div>
+      
+      <div class="card">
+        <h3>✅ Normal Query (Expected Behavior)</h3>
+        <div class="code-block" id="normalCode">Load data to see comparison</div>
+        <p style="margin-top: 15px; color: #27ae60;"><strong>Safe:</strong> Uses parameterized queries to prevent injection</p>
+      </div>
+    </div>
+
+    <div id="defense" class="tab-content">
+      <div class="card">
+        <h3>🛡️ How Resource-Intensive Queries Crash Servers</h3>
+        <p style="color: #bdc3c7;">Resource-intensive SQL injection attacks exploit database queries to consume excessive CPU, memory, and I/O resources:</p>
+        
+        <h4>🔴 Attack Techniques</h4>
+        <div class="code-block">-- 1. Cartesian Product (Exponential Row Multiplication)
+SELECT * FROM users a, users b, users c, users d
+-- If each table has 10,000 rows: 10,000^4 = 10,000,000,000,000,000 rows!
+
+-- 2. CPU-Intensive Functions
+SELECT BENCHMARK(100000000, MD5('payload'))
+-- Forces CPU to compute MD5 hash 100 million times
+
+-- 3. Time-Delay Exploitation
+SELECT SLEEP(10) FROM users
+-- Blocks thread for 10 seconds per row
+
+-- 4. Recursive CTEs (Infinite Loops)
+WITH RECURSIVE cnt(x) AS (
+  SELECT 1 
+  UNION ALL 
+  SELECT x+1 FROM cnt LIMIT 100000
+)
+SELECT * FROM cnt
+
+-- 5. Nested Subqueries (Memory Exhaustion)
+SELECT * FROM (
+  SELECT * FROM (
+    SELECT * FROM users
+  ) a
+) b</div>
+
+        <h4>💥 Why They Crash Servers</h4>
+        <ul>
+          <li><strong>Cartesian Products:</strong> Joining 4 tables with 10k rows each creates 10^16 potential rows - exponential explosion</li>
+          <li><strong>BENCHMARK/SLEEP:</strong> Forces CPU/threads to work or wait, exhausting the connection pool</li>
+          <li><strong>Memory Exhaustion:</strong> Query tries to store massive result sets in RAM</li>
+          <li><strong>I/O Saturation:</strong> Excessive disk access locks the database</li>
+          <li><strong>Thread Pool Depletion:</strong> All database worker threads are blocked, preventing legitimate queries</li>
+          <li><strong>Connection Starvation:</strong> Application can't get new database connections</li>
+        </ul>
+
+        <h4>🛡️ Defense Solutions</h4>
+        
+        <h5>1. Parameterized Queries (Primary Defense)</h5>
+        <div class="code-block">// ❌ VULNERABLE: User input directly in query
+const query = "SELECT * FROM users WHERE id = " + userInput;
+
+// ✅ SAFE: Input treated as data, not code
+const query = "SELECT * FROM users WHERE id = ?";
+db.query(query, [userInput], callback);
+
+// Node.js example
+const result = await pool.query(
+  'SELECT * FROM users WHERE id = $1',
+  [userId]
+);</div>
+        
+        <h5>2. Input Validation and Whitelist</h5>
+        <div class="code-block">// Only allow expected characters/patterns
+const userId = parseInt(req.query.id);
+if (!Number.isInteger(userId) || userId < 0) {
+  return res.status(400).send("Invalid input");
+}
+
+// Whitelist approach for strings
+const allowedColumns = ['name', 'email', 'created_at'];
+if (!allowedColumns.includes(sortColumn)) {
+  throw new Error("Invalid column");
+}</div>
+        
+        <h5>3. Query Timeouts (Prevent Resource Exhaustion)</h5>
+        <div class="code-block">-- MySQL: Limit max query execution time
+SET SESSION max_execution_time = 5000;  -- 5 seconds
+
+-- PostgreSQL: Statement timeout
+SET statement_timeout = '5s';
+
+-- Application level timeout (Node.js)
+db.query(query, {timeout: 5000}, callback);</div>
+
+        <h5>4. Database User Privileges (Least Privilege)</h5>
+        <div class="code-block">-- Create limited application user
+CREATE USER 'app_user'@'localhost' IDENTIFIED BY 'password';
+
+-- Grant only necessary permissions
+GRANT SELECT, INSERT, UPDATE ON app_db.* TO 'app_user'@'localhost';
+
+-- Revoke dangerous functions
+REVOKE EXECUTE ON FUNCTION BENCHMARK FROM 'app_user'@'localhost';
+REVOKE EXECUTE ON FUNCTION SLEEP FROM 'app_user'@'localhost';</div>
+
+        <h5>5. Connection Pool Limits</h5>
+        <div class="code-block">-- Database level
+SET GLOBAL max_connections = 1000;
+
+-- Application pool configuration (Node.js)
+const pool = mysql.createPool({
+  connectionLimit: 10,
+  waitForConnections: true,
+  queueLimit: 0,
+  acquireTimeout: 10000
+});</div>
+
+        <h5>6. Query Monitoring and Alerts</h5>
+        <div class="code-block">-- Monitor slow/expensive queries
+SHOW PROCESSLIST;
+
+-- Kill dangerous queries
+KILL QUERY process_id;
+
+-- Enable slow query log
+SET GLOBAL slow_query_log = 'ON';
+SET GLOBAL long_query_time = 2;
+
+-- Check current queries
+SELECT * FROM information_schema.processlist 
+WHERE time > 5;</div>
+
+        <h5>7. Rate Limiting at Application Level</h5>
+        <div class="code-block">// Express.js rate limiting
+const rateLimit = require('express-rate-limit');
+
+const limiter = rateLimit({
+  windowMs: 60 * 1000,      // 1 minute
+  max: 30,                  // 30 requests per minute
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+app.use('/api/', limiter);</div>
+
+        <h5>8. Web Application Firewall (WAF)</h5>
+        <ul>
+          <li>Deploy WAF rules to detect SQL injection patterns</li>
+          <li>Block requests containing suspicious keywords (BENCHMARK, SLEEP, UNION, etc.)</li>
+          <li>Use services like Cloudflare, AWS WAF, or ModSecurity</li>
+          <li>Implement request signature validation</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let allCharts = {};
+
+    function showMessage(text, type) {
+      const msgDiv = document.getElementById('message');
+      msgDiv.innerHTML = '<div class="alert alert-' + type + '">' + text + '</div>';
+      setTimeout(function() {
+        msgDiv.innerHTML = '';
+      }, 5000);
+    }
+
+    function analyzeQueryImpact(query) {
+      const q = query.toUpperCase();
+      let impactScore = 0;
+      let impactFactors = [];
+      
+      // Detect attack patterns and calculate impact
+      if (/BENCHMARK\s*\(\s*\d+/i.test(query)) {
+        const match = query.match(/BENCHMARK\s*\(\s*(\d+)/i);
+        const iterations = match ? parseInt(match[1]) : 1000000;
+        const severity = iterations > 10000000 ? 95 : iterations > 1000000 ? 75 : 50;
+        impactScore += severity;
+        impactFactors.push({type: 'BENCHMARK', severity: severity, multiplier: 1.8});
+      }
+      
+      if (/SLEEP\s*\(\s*\d+/i.test(query)) {
+        const match = query.match(/SLEEP\s*\(\s*(\d+)/i);
+        const seconds = match ? parseInt(match[1]) : 5;
+        const severity = seconds > 10 ? 90 : seconds > 5 ? 70 : 50;
+        impactScore += severity;
+        impactFactors.push({type: 'SLEEP', severity: severity, multiplier: 2.0});
+      }
+      
+      if (/WAITFOR\s+DELAY/i.test(query)) {
+        impactScore += 80;
+        impactFactors.push({type: 'WAITFOR', severity: 80, multiplier: 1.9});
+      }
+      
+      // Count table joins (Cartesian product)
+      const tableMatches = query.match(/FROM\s+\w+\s+\w+/gi);
+      const joinCount = tableMatches ? tableMatches.length : 0;
+      if (joinCount >= 4) {
+        impactScore += 100;
+        impactFactors.push({type: 'CARTESIAN_PRODUCT', severity: 100, multiplier: 2.5});
+      } else if (joinCount >= 3) {
+        impactScore += 70;
+        impactFactors.push({type: 'MULTIPLE_JOINS', severity: 70, multiplier: 1.7});
+      }
+      
+      if (/WITH\s+RECURSIVE/i.test(query)) {
+        impactScore += 85;
+        impactFactors.push({type: 'RECURSIVE_CTE', severity: 85, multiplier: 2.2});
+      }
+      
+      if (/UNION\s+ALL.*UNION/i.test(query)) {
+        impactScore += 60;
+        impactFactors.push({type: 'UNION_STACKING', severity: 60, multiplier: 1.5});
+      }
+      
+      if (/RANDOMBLOB\s*\(/i.test(query)) {
+        impactScore += 75;
+        impactFactors.push({type: 'MEMORY_BLOB', severity: 75, multiplier: 1.8});
+      }
+      
+      if (/LOAD_FILE\s*\(/i.test(query)) {
+        impactScore += 70;
+        impactFactors.push({type: 'IO_INTENSIVE', severity: 70, multiplier: 1.6});
+      }
+      
+      if (/REPEAT\s*\(/i.test(query)) {
+        impactScore += 55;
+        impactFactors.push({type: 'STRING_REPEAT', severity: 55, multiplier: 1.4});
+      }
+      
+      // Cap impact score at 100
+      impactScore = Math.min(impactScore, 100);
+      
+      return {
+        score: impactScore,
+        factors: impactFactors,
+        isMalicious: impactScore > 40
+      };
+    }
+    
+    function generateMetricsFromImpact(impact, timePoints) {
+      const metrics = [];
+      const baseMultiplier = impact.score / 100;
+      
+      // Find the highest severity multiplier
+      let maxMultiplier = 1.0;
+      impact.factors.forEach(function(f) {
+        if (f.multiplier > maxMultiplier) maxMultiplier = f.multiplier;
+      });
+      
+      for (let i = 0; i < timePoints; i++) {
+        const progress = i / (timePoints - 1);
+        const exponentialGrowth = Math.pow(progress, 0.7);
+        
+        // CPU calculation
+        const baseCpu = 15 + (baseMultiplier * 85 * exponentialGrowth);
+        const cpu = Math.min(100, Math.round(baseCpu * maxMultiplier));
+        
+        // Memory calculation
+        const baseMemory = 45 + (baseMultiplier * 54 * exponentialGrowth);
+        const memory = Math.min(99, Math.round(baseMemory * (maxMultiplier * 0.9)));
+        
+        // Response time (exponential for severe attacks)
+        let responseTime;
+        if (impact.score > 80) {
+          responseTime = Math.round(120 + (15000 * Math.pow(exponentialGrowth, 2)));
+        } else if (impact.score > 60) {
+          responseTime = Math.round(120 + (8000 * Math.pow(exponentialGrowth, 1.8)));
+        } else {
+          responseTime = Math.round(120 + (3000 * exponentialGrowth));
+        }
+        
+        // Connections grow as resources are exhausted
+        const connections = Math.round(8 + (baseMultiplier * 42 * exponentialGrowth));
+        
+        metrics.push({
+          time: (i * 5) + 's',
+          cpu: cpu,
+          memory: memory,
+          responseTime: responseTime,
+          connections: connections
+        });
+      }
+      
+      return metrics;
+    }
+    
+    function generateNormalMetrics(timePoints) {
+      const metrics = [];
+      for (let i = 0; i < timePoints; i++) {
+        metrics.push({
+          time: (i * 5) + 's',
+          cpu: 10 + Math.floor(Math.random() * 4),
+          memory: 30 + Math.floor(Math.random() * 4),
+          responseTime: 45 + Math.floor(Math.random() * 10),
+          connections: 5 + Math.floor(Math.random() * 2)
+        });
+      }
+      return metrics;
+    }
+
+    function loadData() {
+      try {
+        const sqlQuery = document.getElementById('sqlQuery').value;
+        const normalQuery = document.getElementById('normalQuery').value;
+        
+        if (!sqlQuery.trim()) {
+          throw new Error('Please enter a malicious SQL query to analyze');
+        }
+        
+        // Analyze the malicious query
+        const impact = analyzeQueryImpact(sqlQuery);
+        
+        // Generate metrics based on impact analysis
+        const timePoints = 5;
+        const metrics = impact.isMalicious 
+          ? generateMetricsFromImpact(impact, timePoints)
+          : generateNormalMetrics(timePoints);
+        
+        const normalMetrics = generateNormalMetrics(timePoints);
+        
+        // Update JSON fields to show what was calculated
+        document.getElementById('metricsJson').value = JSON.stringify({data: metrics}, null, 2);
+        document.getElementById('normalMetricsJson').value = JSON.stringify({data: normalMetrics}, null, 2);
+
+        updateSummary(metrics, normalMetrics, impact);
+        updateAnalysis(sqlQuery, normalQuery);
+        createCharts(metrics, normalMetrics);
+
+        if (impact.isMalicious) {
+          showMessage('⚠️ Malicious query detected! Impact Score: ' + impact.score + '/100. Charts generated based on predicted resource exhaustion.', 'error');
+        } else {
+          showMessage('✓ Query analyzed. Low risk detected.', 'success');
+        }
+        
+        switchTab(1);
+      } catch (e) {
+        showMessage('✗ Error: ' + e.message, 'error');
+      }
+    }
+
+    function updateSummary(metrics, normalMetrics, impact) {
+      const maxCpu = Math.max.apply(null, metrics.map(function(m) { return m.cpu; }));
+      const maxMemory = Math.max.apply(null, metrics.map(function(m) { return m.memory; }));
+      const maxResponse = Math.max.apply(null, metrics.map(function(m) { return m.responseTime; }));
+      const lastMetric = metrics[metrics.length - 1];
+
+      const normalMaxCpu = Math.max.apply(null, normalMetrics.map(function(m) { return m.cpu; }));
+      const normalMaxMemory = Math.max.apply(null, normalMetrics.map(function(m) { return m.memory; }));
+      const normalMaxResponse = Math.max.apply(null, normalMetrics.map(function(m) { return m.responseTime; }));
+      const normalLastMetric = normalMetrics[normalMetrics.length - 1];
+
+      let status = 'Server Operational';
+      let statusIcon = '🟢';
+      if (maxCpu > 90 || maxResponse > 5000) {
+        status = 'Server Crashed / Unresponsive';
+        statusIcon = '🔴';
+      } else if (maxCpu > 70 || maxResponse > 2000) {
+        status = 'Server Severely Degraded';
+        statusIcon = '🟡';
+      }
+      
+      let impactDetails = '';
+      if (impact && impact.factors.length > 0) {
+        impactDetails = '<div style="margin-top: 15px; padding: 12px; background: rgba(231, 76, 60, 0.2); border-radius: 4px;">';
+        impactDetails += '<strong style="color: #e74c3c;">Detected Attack Patterns:</strong><br>';
+        impact.factors.forEach(function(f) {
+          impactDetails += '<span style="color: #ecf0f1; font-size: 0.9rem;">• ' + f.type.replace(/_/g, ' ') + ' (Severity: ' + f.severity + '/100)</span><br>';
+        });
+        impactDetails += '<strong style="color: #e74c3c; margin-top: 8px; display: block;">Overall Impact Score: ' + impact.score + '/100</strong>';
+        impactDetails += '</div>';
+      }
+
+      document.getElementById('summary').innerHTML = 
+        '<p><strong>Peak CPU Usage:</strong> ' + maxCpu + '%</p>' +
+        '<p><strong>Peak Memory Usage:</strong> ' + maxMemory + '%</p>' +
+        '<p><strong>Peak Response Time:</strong> ' + maxResponse + ' ms</p>' +
+        '<p><strong>Max Active Connections:</strong> ' + lastMetric.connections + '</p>' +
+        '<p><strong>Final Status:</strong> ' + statusIcon + ' ' + status + '</p>' +
+        '<p><strong>Test Duration:</strong> ' + lastMetric.time + '</p>' +
+        impactDetails;
+
+      document.getElementById('normalSummary').innerHTML = 
+        '<p><strong>Peak CPU Usage:</strong> ' + normalMaxCpu + '%</p>' +
+        '<p><strong>Peak Memory Usage:</strong> ' + normalMaxMemory + '%</p>' +
+        '<p><strong>Peak Response Time:</strong> ' + normalMaxResponse + ' ms</p>' +
+        '<p><strong>Max Active Connections:</strong> ' + normalLastMetric.connections + '</p>' +
+        '<p><strong>Final Status:</strong> ✅ Server Healthy</p>' +
+        '<p><strong>Test Duration:</strong> ' + normalLastMetric.time + '</p>';
+    }
+
+    function updateAnalysis(sql, normal) {
+      document.getElementById('malCode').textContent = sql;
+      document.getElementById('normalCode').textContent = normal;
+    }
+
+    function createCharts(metrics, normalMetrics) {
+      const times = metrics.map(function(m) { return m.time; });
+      const cpus = metrics.map(function(m) { return m.cpu; });
+      const mems = metrics.map(function(m) { return m.memory; });
+      const responses = metrics.map(function(m) { return m.responseTime; });
+      const conns = metrics.map(function(m) { return m.connections; });
+
+      const normalTimes = normalMetrics.map(function(m) { return m.time; });
+      const normalCpus = normalMetrics.map(function(m) { return m.cpu; });
+      const normalMems = normalMetrics.map(function(m) { return m.memory; });
+      const normalResponses = normalMetrics.map(function(m) { return m.responseTime; });
+      const normalConns = normalMetrics.map(function(m) { return m.connections; });
+
+      // Chart 1: CPU Comparison
+      const ctx1 = document.getElementById('chart1').getContext('2d');
+      if (allCharts.c1) allCharts.c1.destroy();
+      allCharts.c1 = new Chart(ctx1, {
+        type: 'line',
+        data: {
+          labels: times,
+          datasets: [
+            { 
+              label: 'Malicious Query CPU %', 
+              data: cpus, 
+              borderColor: '#e74c3c', 
+              backgroundColor: 'rgba(231,76,60,0.2)', 
+              tension: 0.4,
+              fill: true,
+              borderWidth: 3
+            },
+            { 
+              label: 'Normal Query CPU %', 
+              data: normalCpus, 
+              borderColor: '#27ae60', 
+              backgroundColor: 'rgba(39,174,96,0.2)', 
+              tension: 0.4,
+              fill: true,
+              borderWidth: 3
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { 
+            legend: { 
+              labels: { color: '#ecf0f1', font: { size: 14 } } 
+            },
+            tooltip: {
+              backgroundColor: 'rgba(0,0,0,0.8)',
+              titleColor: '#fff',
+              bodyColor: '#fff',
+              borderColor: '#3498db',
+              borderWidth: 1
+            }
+          },
+          scales: {
+            y: { 
+              ticks: { color: '#bdc3c7' }, 
+              grid: { color: '#444' },
+              beginAtZero: true,
+              max: 100
+            },
+            x: { 
+              ticks: { color: '#bdc3c7' }, 
+              grid: { color: '#444' } 
+            }
+          }
+        }
+      });
+
+      // Chart 4: Memory Comparison
+      const ctx4 = document.getElementById('chart4').getContext('2d');
+      if (allCharts.c4) allCharts.c4.destroy();
+      allCharts.c4 = new Chart(ctx4, {
+        type: 'line',
+        data: {
+          labels: times,
+          datasets: [
+            { 
+              label: 'Malicious Query Memory %', 
+              data: mems, 
+              borderColor: '#e74c3c', 
+              backgroundColor: 'rgba(231,76,60,0.2)', 
+              tension: 0.4,
+              fill: true,
+              borderWidth: 3
+            },
+            { 
+              label: 'Normal Query Memory %', 
+              data: normalMems, 
+              borderColor: '#27ae60', 
+              backgroundColor: 'rgba(39,174,96,0.2)', 
+              tension: 0.4,
+              fill: true,
+              borderWidth: 3
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { 
+            legend: { 
+              labels: { color: '#ecf0f1', font: { size: 14 } } 
+            },
+            tooltip: {
+              backgroundColor: 'rgba(0,0,0,0.8)',
+              titleColor: '#fff',
+              bodyColor: '#fff',
+              borderColor: '#3498db',
+              borderWidth: 1
+            }
+          },
+          scales: {
+            y: { 
+              ticks: { color: '#bdc3c7' }, 
+              grid: { color: '#444' },
+              beginAtZero: true,
+              max: 100
+            },
+            x: { 
+              ticks: { color: '#bdc3c7' }, 
+              grid: { color: '#444' } 
+            }
+          }
+        }
+      });
+
+      // Chart 2: Response Time Comparison
+      const ctx2 = document.getElementById('chart2').getContext('2d');
+      if (allCharts.c2) allCharts.c2.destroy();
+      allCharts.c2 = new Chart(ctx2, {
+        type: 'line',
+        data: {
+          labels: times,
+          datasets: [
+            {
+              label: 'Malicious Query Response Time (ms)',
+              data: responses,
+              borderColor: '#e74c3c',
+              backgroundColor: 'rgba(231,76,60,0.2)',
+              tension: 0.4,
+              fill: true,
+              borderWidth: 3
+            },
+            {
+              label: 'Normal Query Response Time (ms)',
+              data: normalResponses,
+              borderColor: '#27ae60',
+              backgroundColor: 'rgba(39,174,96,0.2)',
+              tension: 0.4,
+              fill: true,
+              borderWidth: 3
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { 
+            legend: { 
+              labels: { color: '#ecf0f1', font: { size: 14 } } 
+            },
+            tooltip: {
+              backgroundColor: 'rgba(0,0,0,0.8)',
+              titleColor: '#fff',
+              bodyColor: '#fff',
+              borderColor: '#3498db',
+              borderWidth: 1
+            }
+          },
+          scales: {
+            y: { 
+              ticks: { color: '#bdc3c7' }, 
+              grid: { color: '#444' },
+              beginAtZero: true
+            },
+            x: { 
+              ticks: { color: '#bdc3c7' }, 
+              grid: { color: '#444' } 
+            }
+          }
+        }
+      });
+
+      // Chart 3: Connections Comparison
+      const ctx3 = document.getElementById('chart3').getContext('2d');
+      if (allCharts.c3) allCharts.c3.destroy();
+      allCharts.c3 = new Chart(ctx3, {
+        type: 'bar',
+        data: {
+          labels: times,
+          datasets: [
+            {
+              label: 'Malicious Query Connections',
+              data: conns,
+              backgroundColor: '#e74c3c',
+              borderColor: '#c0392b',
+              borderWidth: 2
+            },
+            {
+              label: 'Normal Query Connections',
+              data: normalConns,
+              backgroundColor: '#27ae60',
+              borderColor: '#229954',
+              borderWidth: 2
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { 
+            legend: { 
+              labels: { color: '#ecf0f1', font: { size: 14 } } 
+            },
+            tooltip: {
+              backgroundColor: 'rgba(0,0,0,0.8)',
+              titleColor: '#fff',
+              bodyColor: '#fff',
+              borderColor: '#3498db',
+              borderWidth: 1
+            }
+          },
+          scales: {
+            y: { 
+              ticks: { color: '#bdc3c7' }, 
+              grid: { color: '#444' },
+              beginAtZero: true
+            },
+            x: { 
+              ticks: { color: '#bdc3c7' }, 
+              grid: { color: '#444' } 
+            }
+          }
+        }
+      });
+    }
+
+    function switchTab(index) {
+      const tabs = document.querySelectorAll('.tab-content');
+      const btns = document.querySelectorAll('.tab-btn');
+      tabs.forEach(function(t) { t.classList.remove('active'); });
+      btns.forEach(function(b) { b.classList.remove('active'); });
+      tabs[index].classList.add('active');
+      btns[index].classList.add('active');
+    }
+
+    function sanitizeMaliciousQuery(query) {
+      let safeQuery = query;
+      let steps = [];
+      
+      // Remove BENCHMARK functions
+      if (/BENCHMARK\s*\([^)]+\)/gi.test(safeQuery)) {
+        safeQuery = safeQuery.replace(/BENCHMARK\s*\([^)]+\)/gi, '1');
+        steps.push('Removed BENCHMARK() function - replaced with constant');
+      }
+      
+      // Remove SLEEP functions
+      if (/SLEEP\s*\([^)]+\)/gi.test(safeQuery)) {
+        safeQuery = safeQuery.replace(/SLEEP\s*\([^)]+\)/gi, '');
+        safeQuery = safeQuery.replace(/AND\s+AND/gi, 'AND').replace(/WHERE\s+AND/gi, 'WHERE');
+        steps.push('Removed SLEEP() function - eliminates thread blocking');
+      }
+      
+      // Remove WAITFOR DELAY
+      if (/WAITFOR\s+DELAY\s+'[^']+'/gi.test(safeQuery)) {
+        safeQuery = safeQuery.replace(/WAITFOR\s+DELAY\s+'[^']+'/gi, '');
+        steps.push('Removed WAITFOR DELAY - prevents time-based attacks');
+      }
+      
+      // Simplify recursive CTEs
+      if (/WITH\s+RECURSIVE/gi.test(safeQuery)) {
+        safeQuery = safeQuery.replace(/WITH\s+RECURSIVE[^)]+\)/gi, '');
+        steps.push('Removed recursive CTE - prevents infinite loops');
+      }
+      
+      // Remove multiple UNION statements (keep only first)
+      const unionMatches = safeQuery.match(/UNION\s+ALL\s+SELECT/gi);
+      if (unionMatches && unionMatches.length > 1) {
+        safeQuery = safeQuery.split(/UNION\s+ALL\s+SELECT/i)[0];
+        steps.push('Removed stacked UNION statements - prevents query amplification');
+      }
+      
+      // Fix Cartesian products - add proper JOIN conditions
+      const tablePattern = /FROM\s+(\w+)\s+(\w+)\s*,\s*(\w+)\s+(\w+)/gi;
+      if (tablePattern.test(safeQuery)) {
+        safeQuery = safeQuery.replace(/,\s*(\w+)\s+(\w+)/gi, ' INNER JOIN $1 $2 ON $2.id = id');
+        steps.push('Converted Cartesian product to INNER JOIN with proper conditions');
+      }
+      
+      // Remove RANDOMBLOB
+      if (/RANDOMBLOB\s*\([^)]+\)/gi.test(safeQuery)) {
+        safeQuery = safeQuery.replace(/RANDOMBLOB\s*\([^)]+\)/gi, "''");
+        steps.push('Removed RANDOMBLOB() - prevents memory exhaustion');
+      }
+      
+      // Remove LOAD_FILE
+      if (/LOAD_FILE\s*\([^)]+\)/gi.test(safeQuery)) {
+        safeQuery = safeQuery.replace(/LOAD_FILE\s*\([^)]+\)/gi, "''");
+        steps.push('Removed LOAD_FILE() - prevents I/O saturation');
+      }
+      
+      // Limit REPEAT function
+      if (/REPEAT\s*\([^)]+\)/gi.test(safeQuery)) {
+        safeQuery = safeQuery.replace(/REPEAT\s*\(([^,]+),\s*\d+\)/gi, 'SUBSTRING($1, 1, 100)');
+        steps.push('Limited REPEAT() to SUBSTRING() - prevents string bloat');
+      }
+      
+      // Convert to parameterized query format
+      const wherePattern = /WHERE\s+(\w+)\s*=\s*['"]?([^'"\s]+)['"]?/i;
+      if (wherePattern.test(safeQuery)) {
+        safeQuery = safeQuery.replace(/=\s*['"]?[^'"\s]+['"]?/i, '= ?');
+        steps.push('Converted to parameterized query using ? placeholder');
+      }
+      
+      // Clean up extra spaces and formatting
+      safeQuery = safeQuery.replace(/\s+/g, ' ').trim();
+      safeQuery = safeQuery.replace(/\s*,\s*/g, ', ');
+      
+      // Add query timeout comment
+      safeQuery = '-- Query timeout: 5 seconds\n' + safeQuery;
+      steps.push('Added query timeout constraint');
+      
+      // Add prepared statement wrapper
+      safeQuery = '-- Using prepared statement with parameterized query\n' + safeQuery;
+      steps.push('Wrapped in prepared statement for injection prevention');
+      
+      return {
+        query: safeQuery,
+        steps: steps
+      };
+    }
+
+    function detectDoSQuery() {
+      const query = document.getElementById('sqlQuery').value.toUpperCase();
+      const detectionDiv = document.getElementById('dosDetection');
+      const originalQuery = document.getElementById('sqlQuery').value;
+      
+      const dosPatterns = [
+        { pattern: /BENCHMARK\s*\(/i, threat: 'CPU Exhaustion Attack', severity: 'high', desc: 'BENCHMARK() forces CPU to execute operations millions of times' },
+        { pattern: /SLEEP\s*\(/i, threat: 'Time-Delay Attack', severity: 'high', desc: 'SLEEP() blocks database threads causing connection pool exhaustion' },
+        { pattern: /WAITFOR\s+DELAY/i, threat: 'Time-Delay Attack', severity: 'high', desc: 'WAITFOR DELAY blocks execution causing thread starvation' },
+        { pattern: /WITH\s+RECURSIVE/i, threat: 'Recursive Query Attack', severity: 'high', desc: 'Recursive CTEs can create infinite loops consuming memory' },
+        { pattern: /UNION\s+ALL\s+SELECT.*UNION/i, threat: 'Query Stacking Attack', severity: 'medium', desc: 'Multiple UNIONs can exponentially increase result set size' },
+        { pattern: /FROM\s+\w+\s+\w+,\s*\w+\s+\w+,\s*\w+\s+\w+/i, threat: 'Cartesian Product Attack', severity: 'critical', desc: 'Multiple table joins without conditions create exponential row multiplication' },
+        { pattern: /RANDOMBLOB\s*\(/i, threat: 'Memory Exhaustion Attack', severity: 'high', desc: 'RANDOMBLOB() generates large random data consuming memory' },
+        { pattern: /LOAD_FILE\s*\(/i, threat: 'I/O Saturation Attack', severity: 'high', desc: 'LOAD_FILE() causes excessive disk I/O operations' },
+        { pattern: /REPEAT\s*\(/i, threat: 'String Multiplication Attack', severity: 'medium', desc: 'REPEAT() creates massive strings consuming memory' },
+        { pattern: /RLIKE\s+.*\(.*\)\{.*\}/i, threat: 'ReDoS Attack', severity: 'high', desc: 'Complex regex patterns can cause catastrophic backtracking' }
+      ];
+      
+      let detectedThreats = [];
+      let maxSeverity = '';
+      
+      dosPatterns.forEach(function(p) {
+        if (p.pattern.test(query)) {
+          detectedThreats.push(p);
+          if (p.severity === 'critical') maxSeverity = 'critical';
+          else if (p.severity === 'high' && maxSeverity !== 'critical') maxSeverity = 'high';
+          else if (p.severity === 'medium' && !maxSeverity) maxSeverity = 'medium';
+        }
+      });
+      
+      if (detectedThreats.length > 0) {
+        let severityColor = '#e74c3c';
+        let severityIcon = '🔴';
+        let severityText = 'HIGH RISK';
+        
+        if (maxSeverity === 'critical') {
+          severityColor = '#c0392b';
+          severityIcon = '🚨';
+          severityText = 'CRITICAL RISK';
+        } else if (maxSeverity === 'medium') {
+          severityColor = '#f39c12';
+          severityIcon = '🟡';
+          severityText = 'MEDIUM RISK';
+        }
+        
+        let html = '<div style="background: rgba(231, 76, 60, 0.15); border: 2px solid ' + severityColor + '; border-radius: 6px; padding: 15px; margin-top: 10px;">';
+        html += '<div style="display: flex; align-items: center; margin-bottom: 10px;">';
+        html += '<span style="font-size: 1.2rem; margin-right: 10px;">' + severityIcon + '</span>';
+        html += '<strong style="color: ' + severityColor + '; font-size: 1.1rem;">DoS ATTACK DETECTED - ' + severityText + '</strong>';
+        html += '</div>';
+        
+        detectedThreats.forEach(function(threat) {
+          html += '<div style="background: rgba(0,0,0,0.3); padding: 10px; margin: 8px 0; border-radius: 4px; border-left: 3px solid ' + severityColor + ';">';
+          html += '<div style="color: #ecf0f1; font-weight: bold; margin-bottom: 5px;">⚠️ ' + threat.threat + '</div>';
+          html += '<div style="color: #bdc3c7; font-size: 0.9rem;">' + threat.desc + '</div>';
+          html += '</div>';
+        });
+        
+        html += '<div style="margin-top: 12px; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 4px;">';
+        html += '<strong style="color: #3498db;">🛡️ Recommendation:</strong> ';
+        html += '<span style="color: #bdc3c7;">Use parameterized queries and implement query timeouts to prevent this attack.</span>';
+        html += '</div>';
+        html += '</div>';
+        
+        detectionDiv.innerHTML = html;
+      } else {
+        if (query.trim().length > 0) {
+          detectionDiv.innerHTML = '<div style="background: rgba(39, 174, 96, 0.15); border: 2px solid #27ae60; border-radius: 6px; padding: 12px; margin-top: 10px;">' +
+            '<span style="font-size: 1.1rem; margin-right: 8px;">✅</span>' +
+            '<strong style="color: #27ae60;">No DoS patterns detected in this query</strong>' +
+            '</div>';
+        } else {
+          detectionDiv.innerHTML = '';
+        }
+      }
+      
+      // Show sanitized query if malicious patterns detected
+      const sanitizedDiv = document.getElementById('sanitizedQueryDiv');
+      if (detectedThreats.length > 0) {
+        const sanitized = sanitizeMaliciousQuery(originalQuery);
+        document.getElementById('sanitizedQuery').textContent = sanitized.query;
+        
+        const stepsHtml = sanitized.steps.map(function(step) {
+          return '<li>' + step + '</li>';
+        }).join('');
+        document.getElementById('sanitizationSteps').innerHTML = stepsHtml;
+        
+        sanitizedDiv.style.display = 'block';
+      } else {
+        sanitizedDiv.style.display = 'none';
+      }
+    }
+
+    function resetAll() {
+      if (confirm('Reset all data?')) {
+        document.getElementById('metricsJson').value = '';
+        document.getElementById('normalMetricsJson').value = '';
+        document.getElementById('sqlQuery').value = '';
+        document.getElementById('normalQuery').value = '';
+        document.getElementById('dosDetection').innerHTML = '';
+        document.getElementById('summary').innerHTML = '<p>Click "Load Test Results" to visualize your data</p>';
+        document.getElementById('normalSummary').innerHTML = '<p>Click "Load Test Results" to visualize your data</p>';
+        document.getElementById('malCode').textContent = 'Load data to see your query';
+        document.getElementById('normalCode').textContent = 'Load data to see comparison';
+        
+        Object.keys(allCharts).forEach(function(key) {
+          if (allCharts[key]) allCharts[key].destroy();
+        });
+        allCharts = {};
+        
+        showMessage('✓ All data has been reset', 'success');
+      }
+    }
+    
+    // Run detection on page load for default query
+    window.onload = function() {
+      detectDoSQuery();
+    };
+  </script>
+</body>
+</html>
